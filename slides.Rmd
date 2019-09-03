@@ -1,0 +1,58 @@
+---
+title: "Web Scraping for Sports Data"
+author: Wanwan Xu
+date: October 5, 2019
+output:
+  revealjs::revealjs_presentation:
+    theme: simple
+    highlight: pygments
+    center: false
+---
+
+```{r setup, echo = FALSE}
+options(width = 90)
+```
+
+## Outline
+
+- What is web scraping and why do we need it
+
+- Types of web scraping
+
+- Using R
+
+- Case study (college basketball)
+
+- Summary
+
+
+## Getting Started
+
+- Prerequisites: R and RStudio preinstalled.
+
+- A list of R packages needed is given below.
+
+```{r pckgs, eval=FALSE, message=FALSE, warning=FALSE}
+install.packages("rvest",repos = "http://cran.us.r-project.org")
+install.packages("RSelenium",repos = "http://cran.us.r-project.org")
+library(devtools)
+install_github("skoval/deuce")
+```
+
+- Use `help()` function to take a closer look.
+
+```{r help, eval = FALSE}
+?help                         # details on using the `help` function
+help(package = "deuce")       # information about the stats package
+```
+
+
+## Motivation?
+
+> - Have a topic in mind, but not sure Where to find the data. 
+
+> - Found related data online, not able to download directly.
+
+> - Need a reproducible way to capture similar data repeatedly.
+
+> - 
