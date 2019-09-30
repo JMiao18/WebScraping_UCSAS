@@ -1,3 +1,4 @@
 *.Rhistory
-*.html
-*.txt
+*.Rapp.history
+slides.html
+selenium_test.R

@@ -1,0 +1,26 @@
+Do we need a page of self introduction?
+
+
+Which way is better, Docker or Java? maybe send out 
+
+
+Next wednesday, sned out lists to participants. 
+Acknowlegements: Stephanie's and other resou
+
+
+set up 50+10+50+10 minitues
+
+
+git: need to be public
+rename slides_files
+remove html file. (maybe talk to Tuhin?, added to the title or the readme)
+remove .Rhistory
+detail read me.
+
+expect: git clone, maekfile can directly generate it.
+
+
+install of RSelenium: docker(NO), java(instructions), 
+		      data bricks(maybe need to check), 
+		      case study (set up steps)
+
