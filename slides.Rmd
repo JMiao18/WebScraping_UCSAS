@@ -7,6 +7,7 @@ output:
       widescreen: true
 ---
 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
@@ -156,8 +157,8 @@ Unfortunately, most of the data are not available directly.
 In this case, you can still capture the data but you need to know whether it is `static` or `dynamic` data. Web developer tools open the door to "view source". 
 
 ```{r, out.width = "400px"}
-knitr::include_graphics("slides_files/web_dev_mac.png")
-knitr::include_graphics("slides_files/web_dev_win.png")
+knitr::include_graphics("figures/web_dev_mac.png")
+knitr::include_graphics("figures/web_dev_win.png")
 ```
 
 ## Exercise: static or dynamic? 
@@ -245,45 +246,308 @@ boxscore_east <- webpage %>%
                 html_table(header = T)
 boxscore_east[[1]][1:3,1:3]
 ```       
+
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 boxscore_east <- boxscore_east[[1]]
 mean(as.numeric(boxscore_east$`W/L%`[2:6]))
 ``` 
 
+## Exercise: loop through static data (Unfinished)
+- How to extract all Toronto Raptor's score in June?
+
+- Start with [June 1st](https://www.basketball-reference.com/boxscores/?month=6&day=1&year=2019)
+
+- Can you extend this to the whole year 2018? 
+
 ## Scrap dynamic data
 
-- Because dynamic data is created on-the-fly (in response to user interactions) we have to browse to get access to it 
+- Because dynamic data is created on-the-fly (in response to user interactions) we have to browse to get access to it. 
 
-- Fortunately, we can automate browsing 
+- How do we "browse"? open Chrome, read content, find the keywords, extract information.
 
-- We just need to find what instructions to give to mimic the browsing, and get familiar with tools that can implement these instructions
+- Can this process be automated?
 
-## Scrap dynamic data
+- YES! We just need to find what instructions to give to mimic the browsing, and get familiar with tools that can implement these instructions.
 
-- With packages `RSelenium`. [Selenium](https://www.seleniumhq.org/) is a software that allows automated Web browsing. 
+## Set up `RSelenium`
 
-```{r echo=TRUE, eval=FALSE}
+- With packages `RSelenium`, an interface with software [Selenium](https://www.seleniumhq.org/), makes it easy to connect to a Selenium Server.
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
 install.packages("RSelenium",repos = "http://cran.us.r-project.org")
 require(RSelenium)
+```
+
+- Connect to a server. Other methods include using [Docker](https://cran.r-project.org/web/packages/RSelenium/vignettes/basics.html#introduction) or [Java binary](https://cran.r-project.org/web/packages/RSelenium/vignettes/basics.html#introduction).
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+## try default function
+rD <- rsDriver(port = 4444L, browser = "chrome")
 ```    
 
+
+## Set up `RSelenium`
+Possible errors:
+![session not created](./figures/selenium_err1.png)
+![couldn't open browser](./figures/selenium_err2.png)
+
+- check the version of your chrome driver (chromehelp -> about google chrome -> version), check the supported selenium driver, find the closet configuration in the package, change default value.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+binman::list_versions("chromedriver")
+```
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+rD <- rsDriver(port = 4444L, browser = "chrome",chromever = "77.0.3865.40")
+```
+
+## Set up `RSelenium`
+Possible error:
+
+![session not created](./figures/selenium_err3.png)
+
+- Try a different number as port, any positive number should work.
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+rD <- rsDriver(port = 5678L, browser = "chrome",chromever = "77.0.3865.40")
+```
+
+After this command, you should see a pop-up blank tab, let's move on!
+
+## Scrap dynamic data
 - Lots of functions are implemented and [documented](https://cran.r-project.org/web/packages/RSelenium/RSelenium.pdf), basic steps including:
 
-    +Set the Web driver (select browser and port)
+    - Set the Web driver, select browser and port (hopefully done!)
     
-    +Find the elements with the data
+    - Find the elements with the data
     
-    +Extract the content
+    - Extract the content
     
-    +Parse the contents
+    - Parse the contents
+    
+
+## Example: dynamic data
+Consider the following match summary: [2017 Australian Open Final](http://www.flashscore.com/match/Cj6I5iL9/#match-statistics;0)
+
+<center>
+![](figures/aus-open-final.png){width=70%}
+</center>
+
 
 ## Example: dynamic data
 
+If we inspect the page, we find that these stats are dynamic data. We also find that the main table of content has the id `detail`.
+
+<center>
+![](figures/aus-open-inspect.png){width=95%}
+</center>
+
+
+## Example: dynamic data
+Following previous steps, after setting up the server, we extract the table of stats using the CSS `id` node.
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+# Get id element
+webElem <- remDr$findElements(using = 'id', "detail")
+#  Use getElementText to extract the text from this element
+unlist(lapply(webElem, function(x){x$getElementText()}))[[1]]
+remDr$close() # Close driver when finished
+```
+
 ## Exercise: dynamic data
+Take a look at another match [summary](https://www.flashscore.com/match/fNecEwW2/#match-statistics;0), can you extract the statistics in set 1, 2 and 3 seperately and compare to the full match result? 
+
+- Set up driver for this url;
+
+- Find the key word you want to extract;
+
+- Write a loop based on our example;
+
+- Organize the result 
+
+    - Hint: for a long string, `gsub()` and `strsplit()` can be useful.
+    
+## Solution: dynamic data
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+# set up server
+remDr <- rsDriver(port = 5558L, browser = "chrome",version = "4.0.0-alpha-2",
+               chromever = "77.0.3865.40")
+remDr <- remDr[["client"]]
+# start loop
+url <- "https://www.flashscore.com/match/fNecEwW2/#match-statistics;"
+result <- NULL
+# start loop
+for (i in 0:3){
+  # navigate page
+  remDr$navigate(paste0(url,i)) 
+  # find elements
+  webElem <- remDr$findElements(using = 'id', "detail")
+  #  Use getElementText to extract the text from this element
+  result[i+1] <- unlist(lapply(webElem, function(x){x$getElementText()}))[[1]]
+}
+# close server
+remDr$close() # Close driver when finished
+```
 
 ## Solution: dynamic data
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+result_set <- NULL
+for (i in 1:4){
+  res <- result[i]
+  # keep only useful information
+  res <- gsub(".*Set 3\n(.+)  close window.*", "\\1", res)
+  # split string into vector
+  result_set <- cbind(result_set,unlist(strsplit(res, split = '\n')))
+}
+colnames(result_set) <- c("match","set1", "set2","set3")
+head(result_set)
+```
+![](figures/set_result.png)
 
-## Case study: 
+## What else ...
+
+There are some other functions in the `RSelenium` package, including but not limited to:
+
+- `findElement()` with CSS selector or Xpath
+
+- `sendKeysToElement()`, you can type in the query box (like Google), or press enter key using this command.
+
+- `clickElement()`, mimic mouse event
+
+- `getTitle()`,`getSource()`,`screenshot()`,`switchToFrame()`...
+
+- [R openSCI document]("https://ropensci.github.io/RSelenium/articles/basics.html") provides a detailed example on Google homepage.
+
+
+## Case study: College basketball - UConn
+If we want to know how is UConn's performance at NCAA basketball 2018/2019, which kind of data may be helpful? 
+
+- match record, Win/loss
+
+- score record, home/away
+
+- component information, head to head statistics
+
+There are tons of websites/resources out there, I'll use [FlashScore](https://www.flashscore.com/) as an example today. 
+
+
+## Case study: College basketball - UConn
+Let's take a look at UConn's [homepage](https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/), 
+
+<center>
+![](figures/uconn_flashscore.png){width=75%}
+</center>
+
+## Case study: College basketball - UConn
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+url <- "https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/"
+remDr <- rsDriver(port = 5556L, browser = "chrome",version = "4.0.0-alpha-2",
+               chromever = "77.0.3865.40")
+remDr <- remDr[["client"]]
+```
+
+<center>
+![](figures/uconn-livetable.png){width=80%}
+</center>
+
+## Case study: College basketball - UConn
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+webElem <- remDr$findElements(using = 'id', "live-table")
+unlist(lapply(webElem, function(x){x$getElementText()}))
+```
+
+<center>
+![](figures/uconn_beforeclick.png){width=60%}
+</center>
+
+<center>
+![](figures/uconn-showmore.png)
+</center>
+
+- It would be great to collect more information, i.e., click the show more matches. 
+
+## Case study: College basketball - UConn
+- To "click", we inspect the element (right click -> inspect -> right click highlight -> copy -> copy selector), then apply `findElements()`. 
+
+- Just like when we click with mouse, there is no guarantee how many more rows we get to see. A while loop would be useful now. 
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+remDr$navigate(url)
+repeat{
+  x <- try(click_ind <- remDr$findElement(using = 'css selector', 
+                                          "#live-table > div > div > div > a"),
+      silent=TRUE)
+  if (inherits(x, "try-error")) break
+  click_ind$clickElement()
+}
+webElem <- remDr$findElements(using = 'id', "live-table")
+uconn_score_all <- unlist(lapply(webElem, function(x){x$getElementText()}))
+```
+
+## Case study: College basketball - UConn
+- Now with all the available data, time to scrap and clean! 
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+uconn_score <- unlist(strsplit(uconn_score_all, split = '\n'))[-c(1:3)]
+uconn_score[1:50]
+```
+<center>
+![](figures/head_uconn_score.png)
+</center>
+
+
+## Case study: College basketball - UConn
+What about a match predictions? 
+
+- Just for a minute, pretend we are at March 13th, 2019. There will be a game between South Florida and UConn tomorrow. 
+
+- To predict which one would win, we may need...
+
+    + Head to head statistics between the two teams
+    
+    + SFU winning rate, UConn winning rate etc.
+
+
+## Case study: College basketball - UConn
+For head to head comparison, inspect the element first again:
+<center>
+![](figures/uconn_sfu_h2h.png){width=60%}
+</center>
+
+## Case study: College basketball - UConn
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+url <- "https://www.flashscore.com/match/IRo6KWr7/#h2h;overall"
+remDr$navigate(url)
+webElem <- remDr$findElement(using = 'css selector', 
+                             "#tab-h2h-overall > div:nth-child(3) > 
+                             table > tbody > tr.hid > td > a")
+webElem$clickElement()
+```
+
+## Case study: College basketball - UConn
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+webElem <- remDr$findElement(using = 'css selector', 
+                             "#tab-h2h-overall > div:nth-child(3) > table")
+h2h <- unlist(webElem$getElementText())
+h2h <- unlist(strsplit(h2h, split = '\n'))[-c(1,17,20)]
+h2h <- gsub("South Florida", "SF", h2h)
+win_team <- NULL
+for (i in 1:length(h2h)){
+  team <- h2h[[i]][c(3,4)]
+  score <- as.numeric(h2h[[i]][c(5,7)])
+  win_team <- c(win_team,team[which.max(score)])
+}
+```
+
+![](figures/uconn_sfu_h2h_overall.png)
+
+
+
+
+## Case study: College basketball - UConn
+- Looks like UConn is gonna win! 
+
+<center>
+![](figures/uconn_southf.png)
+</center>
 
 ## Resources
 

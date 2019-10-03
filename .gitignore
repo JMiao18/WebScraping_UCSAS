@@ -1,4 +1,6 @@
 *.Rhistory
+*.RData
 *.Rapp.history
 slides.html
 selenium_test.R
+code.R
