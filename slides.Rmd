@@ -19,10 +19,10 @@ knitr::opts_chunk$set(echo = FALSE)
 - Types of web scraping
 
 - Using R
-  + Single page
-  + dynamic pages
+  + static data
+  + dynamic data
 
-- Case study (college basketball)
+- Case study (college basketball - UConn)
 
 - Summary
 
@@ -60,16 +60,16 @@ Have you experienced ...
       
       - lightweight (compared with commerical software such as MATLAB, SAS) 
       
-      - awesome package ecosystem ($> 12,000$ packages available on CRAN now)
+      - awesome package ecosystem (more than 12,000 packages available on CRAN now)
 
 - Use `help()` function to take a closer look.
 
 ```{r help, echo=TRUE, eval=FALSE}
 ?help                         # details on using the `help` function
-help(package = "deuce")       # information about the stats package
+help(package = "stats")       # information about the stats package
 ```
 
-## Getting started (need revision)
+## Getting started 
 
 - For this workshop, we'll utilize a few packages in R:
 
@@ -252,10 +252,14 @@ boxscore_east <- boxscore_east[[1]]
 mean(as.numeric(boxscore_east$`W/L%`[2:6]))
 ``` 
 
-## Exercise: loop through static data (Unfinished)
+## Exercise: loop through static data 
 - How to extract all Toronto Raptor's score in June?
 
-- Start with [June 1st](https://www.basketball-reference.com/boxscores/?month=6&day=1&year=2019)
+    - start with [June 1st](https://www.basketball-reference.com/boxscores/?month=6&day=1&year=2019)
+    
+    - pattern in the url
+    
+    - implement R loop
 
 - Can you extend this to the whole year 2018? 
 
@@ -430,7 +434,7 @@ There are tons of websites/resources out there, I'll use [FlashScore](https://ww
 
 
 ## Case study: College basketball - UConn
-Let's take a look at UConn's [homepage](https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/), 
+Let's take a look at UConn's [homepage](https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/):
 
 <center>
 ![](figures/uconn_flashscore.png){width=75%}
@@ -538,9 +542,6 @@ for (i in 1:length(h2h)){
 ```
 
 ![](figures/uconn_sfu_h2h_overall.png)
-
-
-
 
 ## Case study: College basketball - UConn
 - Looks like UConn is gonna win! 
