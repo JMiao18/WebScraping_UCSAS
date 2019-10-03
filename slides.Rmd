@@ -253,15 +253,40 @@ mean(as.numeric(boxscore_east$`W/L%`[2:6]))
 ``` 
 
 ## Exercise: loop through static data 
-- How to extract all Toronto Raptor's score in June?
+- How to extract all Toronto Raptor's score in every month's first day in 2018?
 
-    - start with [June 1st](https://www.basketball-reference.com/boxscores/?month=6&day=1&year=2019)
+    - start with [January 1st](https://www.basketball-reference.com/boxscores/?month=1&day=1&year=2018)
     
     - pattern in the url
     
     - implement R loop
 
 - Can you extend this to the whole year 2018? 
+
+
+## Solution: loop through static data 
+
+```{r eval=FALSE, echo=TRUE, message=FALSE, warning=FALSE}
+require('rvest')
+url_common_start <- "https://www.basketball-reference.com/boxscores/?month="
+url_common_end <- "&day=1&year=2018"
+
+score_raptor_2018 <- NULL
+for (month in c(1:6,11,12)){
+  url <- paste0(url_common_start,month,url_common_end)
+  webpage <- read_html(url)
+  boxscore <- webpage %>%
+    html_nodes(xpath = '//*[@id="divs_standings_E"]') %>%
+    html_table(header=T)
+  boxscore <- boxscore[[1]]
+  score_raptor_month <- boxscore[boxscore$`Eastern Conference` == "Toronto Raptors*",]
+  score_raptor_2018 <- rbind(score_raptor_2018,score_raptor_month,make.row.names = FALSE)
+}
+score_raptor_2018["Month"] <- c(1:6,11,12)
+head(score_raptor_2018)
+``` 
+
+
 
 ## Scrap dynamic data
 
