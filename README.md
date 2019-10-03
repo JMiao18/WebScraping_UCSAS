@@ -1,6 +1,6 @@
 # About
 
-Slides and source code for the stats for sports workshop on web scraping.
+Slides and source code for the stats for sports workshop on web scraping. The slides are modified from [Dr. Kovalchik's material]. (https://github.com/skoval/UseRSportTutorial)
 
 ## Resources
 
