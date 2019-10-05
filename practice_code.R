@@ -10,8 +10,10 @@ help(package = "stats")
 ## install packages
 install.packages("rvest",repos = "http://cran.us.r-project.org")
 install.packages("RSelenium",repos = "http://cran.us.r-project.org")
-library(devtools)
-install_github("skoval/deuce")
+require("rvest")
+require("RSelenium")
+require("knitr")
+require("kableExtra")
 
 
 ####################### import files stored online #####################
@@ -20,6 +22,7 @@ install_github("skoval/deuce")
 url <- "http://www.tennis-data.co.uk/2019/ausopen.csv"
 tennis_aus <- read.csv(url)
 print(dim(tennis_aus))
+tennis_aus[1,1:6]
 
 ## download data
 url <- "http://www.bls.gov/cex/pumd/data/comma/diary14.zip"
@@ -28,82 +31,147 @@ unzip("dataset.zip")
 # assess the files contained in the .zip file which
 # unzips as a folder named "diary14"
 list.files("diary14")
-tennis_aus[1,1:6]
 
 ## exercise: online file import 
+url <- "http://www.tennis-data.co.uk/2018/usopen.csv"
+tennis_us <- read.csv(url)
+
+
 
 
 ########################## static data ##############################
 
 ## readLines
 tennis_elo <- readLines("http://tennisabstract.com/reports/atp_elo_ratings.html")
-tennis_elo[1:3]
+head(tennis_elo)
 
 ## rvest
 #load data
 require('rvest')
-url <- 'https://www.sports-reference.com/cbb/players/chris-clemons-2.html'
-webpage <- read_html(url)
-# organize data
-data <- webpage %>%
+url_nba <- "https://www.basketball-reference.com/boxscores/?month=6&day=13&year=2019"
+webpage <- read_html(url_nba)
+# extract date
+webpage %>% html_nodes(css = 'h1') %>% html_text()
+# scrape kew word
+boxscore_0613 <- webpage %>%
   html_nodes(css = 'table') %>%
   html_table()
-cat("Extracted", length(data), "tables, with", nrow(data[[1]]), 
-    "rows and", ncol(data[[1]]), "columns \n")
-head(data[[1]][1,1:8])
+typeof(boxscore_0613)
 
-
-## exercise: rvest
+## exercise: only the division standings table for the Easter conference.
+webpage <- read_html(url_nba)
+boxscore_east <- webpage %>%
+  html_nodes(xpath = '//*[@id="divs_standings_E"]') %>%
+  html_table(header = T)
+boxscore_east <- boxscore_east[[1]]
+mean(as.numeric(boxscore_east$`W/L%`[2:6]))
 
 
 ## exercise: loop through static data 
+url_common_start <- "https://www.basketball-reference.com/boxscores/?month="
+url_seq  <- paste0(c(11,12,1:4),"&day=1&year=",c(rep(2018,2),rep(2019,4)))
+score_raptor_2018 <- NULL
+for (i in 1:length(url_seq)){
+  url <- paste0(url_common_start,url_seq[i])
+  webpage <- read_html(url)
+  boxscore <- webpage %>%
+    html_nodes(xpath = '//*[@id="divs_standings_E"]') %>%
+    html_table(header=T)
+  boxscore <- boxscore[[1]]
+  score_raptor_month <- boxscore[boxscore$`Eastern Conference` == "Toronto Raptors*",]
+  score_raptor_2018 <- rbind(score_raptor_2018,score_raptor_month,make.row.names = FALSE)
+}
+score_raptor_2018
+
+
+
 
 
 ########################## dynamic data ##############################
 
 ## set up RSelenium
-install.packages("RSelenium",repos = "http://cran.us.r-project.org")
 require(RSelenium)
+# check available selenium driver version
 binman::list_versions("chromedriver")
+# check your chrome version as well 
+# https://help.zenplanner.com/hc/en-us/articles/204253654-How-to-Find-Your-Internet-Browser-Version-Number-Google-Chrome
 rD <- rsDriver(port = 5678L, browser = "chrome",chromever = "77.0.3865.40")
-
+remDr <- rD[["client"]]
 
 ## example: Australia open final
+## navigate to the page first
+url <- "http://www.flashscore.com/match/Cj6I5iL9/#match-statistics;0"
+remDr$navigate(url)
 # Get id element
 webElem <- remDr$findElements(using = 'id', "detail")
-#  Use getElementText to extract the text from this element
+# Use getElementText to extract the text from this element
 unlist(lapply(webElem, function(x){x$getElementText()}))[[1]]
-remDr$close() # Close driver when finished
+# Close driver when finished
+remDr$close() 
+
 
 ## exercise: 
-
+# set up server
+remDr <- rsDriver(port = 5747L, browser = "chrome", version = "4.0.0-alpha-2",
+                  chromever = "77.0.3865.40")
+remDr <- remDr[["client"]]
+# start loop
+url <- "https://www.flashscore.com/match/fNecEwW2/#match-statistics;"
+result <- NULL
+# start loop
+for (i in 0:3){
+  # navigate page
+  remDr$navigate(paste0(url,i)) 
+  # find elements
+  webElem <- remDr$findElements(using = 'id', 'detail')
+  #  Use getElementText to extract the text from this element
+  result[i+1] <- unlist(lapply(webElem, function(x){x$getElementText()}))[[1]]
+  print(i)
+}
+# close driver
+remDr$close() 
+# organize results
+result_set <- NULL
+for (i in 1:4){
+  res <- result[i]
+  # keep only useful information
+  res <- gsub(".*Set 3\n(.+)", "\\1", res)
+  # split string into vector
+  result_set <- cbind(result_set, unlist(strsplit(res, split = '\n')))
+}
+colnames(result_set) <- c("match","set1", "set2","set3")
+head(result_set)
 
 
 ########################## case study ##############################
 ## navigate to specific url
-library(RSelenium) 
 url <- "https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/"
-rD <- rsDriver(port = 6001L, browser = "chrome",version = "4.0.0-alpha-2",
+rD <- rsDriver(port = 6111L, browser = "chrome",version = "4.0.0-alpha-2",
                chromever = "77.0.3865.40")
 remDr <- rD[["client"]]
 remDr$navigate(url)
 
 ## extract live table
-remDr$navigate(url)
 webElem <- remDr$findElements(using = 'id', "live-table")
 unlist(lapply(webElem, function(x){x$getElementText()}))
 
 ## one click to see more
 webElem <- remDr$findElement(using = 'css selector', "#live-table > div > div > div > a")
 webElem$clickElement()
+remDr$close()
 
 ## while loop to load all the "see more details"
+url <- "https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/"
+rD <- rsDriver(port = 1720L, browser = "chrome",version = "4.0.0-alpha-2",
+               chromever = "77.0.3865.40")
+remDr <- rD[["client"]]
 remDr$navigate(url)
 repeat{
-  x <- try(click_ind <- remDr$findElement(using = 'css selector', "#live-table > div > div > div > a"),
+  x <- try(click_ind <- remDr$findElement(using = 'css selector', 
+                                          "#live-table > div > div > div > a"),
            silent=TRUE)
-  if (inherits(x, "try-error")) break
-  click_ind$clickElement()
+  if (inherits(x, "try-error")){break}
+  try(click_ind$clickElement(),silent=TRUE)
 }
 
 ## extract full table
@@ -112,9 +180,15 @@ uconn_score_all <- unlist(lapply(webElem, function(x){x$getElementText()}))
 
 ##  organize score results
 uconn_score <- unlist(strsplit(uconn_score_all, split = '\n'))[-c(1:3)]
+remDr$close()
+
+
 
 ## navigate to head to head page
 url <- "https://www.flashscore.com/match/IRo6KWr7/#h2h;overall"
+rD <- rsDriver(port = 2648L, browser = "chrome",version = "4.0.0-alpha-2",
+               chromever = "77.0.3865.40")
+remDr <- rD[["client"]]
 remDr$navigate(url)
 
 ## click to load all the data, extract table elements
@@ -136,3 +210,6 @@ for (i in 1:length(h2h)){
   score <- as.numeric(h2h[[i]][c(5,7)])
   win_team <- c(win_team,team[which.max(score)])
 }
+win_team
+remDr$close() 
+

@@ -1,6 +1,7 @@
 ---
 title: "Web Scraping for Sports Data"
-author: "Wanwan Xu"
+subtitle: 'UCSAS 2019'
+author:  Wanwan Xu
 date: "October 5, 2019"
 output: 
   ioslides_presentation:
@@ -10,15 +11,20 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+require("rvest")
+require("RSelenium")
+require("knitr")
+require("kableExtra")
 ```
 
 ## Outline
 
-- Why do we need to "scrap"?
+- Why do we need to "scrape"?
 
 - Types of web scraping
 
 - Using R
+  + import files stored online
   + static data
   + dynamic data
 
@@ -30,29 +36,40 @@ knitr::opts_chunk$set(echo = FALSE)
 ## Motivation
 Have you experienced ...
 
-- Have a topic in mind, but not sure Where to find the data. 
+- Have a topic in mind, but not sure where to find the data. 
 
 - Found related data online, not able to download directly.
 
 - Need a reproducible way to capture similar data repeatedly.
 
-- Need more than just numbers, maybe also texts, images, or even Gifs.
+- Need more than just numbers, maybe also texts, images, or even GIFs.
 
+![](figures/logos.png)
 
 ## Different types of web scraping
-[Example (College basketball)](https://www.sports-reference.com/cbb/schools/)
+[Example (College basketball school index)](https://www.sports-reference.com/cbb/schools/)
 
-- Human Copy-Paste: Click, drag, ctrl+c, ctrl+v. Slow and inefficient.
+- Human Copy-Paste: Click, drag, ctrl+c, ctrl+v. 
 
-- Text pattern matching: make use of [regular expression](https://regexr.com/). Complicated, need specific software to implement. 
+    - *Slow and inefficient.*
+       
+- Text pattern matching: make use of [regular expression](https://regexr.com/). 
 
-- API interface: [ScraperAPI](https://www.scraperapi.com/?fp_ref=krishna-32), [Octoparse](https://www.octoparse.com/?AgentCode=296), powerful but expensive, some pages may not be accessible.  
+    - *Complicated, need specific software to implement.*
+       
+- API interface: [ScraperAPI](https://www.scraperapi.com/?fp_ref=krishna-32), [Octoparse](https://www.octoparse.com/?AgentCode=296), 
 
-- DOM (Document Object Model) parsing: Treat each webpage as a tree structure wherein each node is an object representing a part of the document. Not intuitive, require programming language.
+    - *Powerful but expensive, some pages may not be accessible.*  
+        
+- DOM (Document Object Model) parsing:
+      
+    - *Not intuitive, require programming.*
 
 ## Getting started
 
-- Prerequisites: R and RStudio preinstalled.
+- Prerequisites: experience with R, have a working RStudio/R with you.
+
+      - we are only focusing on R today, other languages also work.
 
 - Advantages of R: 
 
@@ -62,49 +79,54 @@ Have you experienced ...
       
       - awesome package ecosystem (more than 12,000 packages available on CRAN now)
 
-- Use `help()` function to take a closer look.
-
-```{r help, echo=TRUE, eval=FALSE}
-?help                         # details on using the `help` function
-help(package = "stats")       # information about the stats package
-```
 
 ## Getting started 
 
 - For this workshop, we'll utilize a few packages in R:
 
 ```{r pckgs, eval=FALSE, echo=TRUE}
-install.packages("rvest",repos = "http://cran.us.r-project.org")
-install.packages("RSelenium",repos = "http://cran.us.r-project.org")
-library(devtools)
-install_github("skoval/deuce")
+install.packages("rvest", repos = "http://cran.us.r-project.org")
+install.packages("RSelenium", repos = "http://cran.us.r-project.org")
 ```
 
+- Use `help()` function to take a closer look.
+
+```{r help, echo=TRUE, eval=FALSE}
+# details on using the `help` function
+?help                        
+# information about the rvest package
+help(package = "rvest")       
+```
 
 ## Getting started
 
-Before we jump into syntax, let's take a look at the source we want to scrape. 
+What are the possible scenarios we will be facing? 
 
-- Some data files are available already? Import directly! 
+- Some data files are available already. Import directly! 
 
 - The web pages are simple ...
     
-    + data is hidden in the source code (static data)
+      - data is hidden in the source code (static data)
 
 - The web pages are complicated ...
 
-    + the numbers are not in the source code (dynamic data)
+      - the numbers are not in the source code (dynamic data)
 
 
 ## Importing files stored online
 - Files that can be read with `read.csv` or related functions can be directly imported from a URL.
 
-- Example: we extract the most recent Australian Open match results:
+- Example: we extract the most recent [Australian Open Tennis Championships (AUS Open) atch results](http://www.tennis-data.co.uk/ausopen.php):
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 url <- "http://www.tennis-data.co.uk/2019/ausopen.csv"
 tennis_aus <- read.csv(url)
-print(dim(tennis_aus))
-tennis_aus[1,1:6]
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+require("kableExtra")
+kable(tennis_aus, "html",align=c(rep('c',times=ncol(tennis_aus)))) %>%
+    kable_styling(font_size = 14) %>%
+    scroll_box(width = "1000px", height = "200px")
 ```
 
 ## Importing files stored online
@@ -115,24 +137,29 @@ url <- "http://www.bls.gov/cex/pumd/data/comma/diary14.zip"
 
 # download .zip file and unzip contents
 download.file(url, dest = "dataset.zip", mode = "wb") 
+
+# unzip on the downloaded path directly
 unzip("dataset.zip")
 
-# assess the files contained in the .zip file which
-# unzips as a folder named "diary14"
+# assess the files contained in the .zip file
 list.files("diary14")
 ```
 
 - Not neccessarily to save the zip file, [`tempfile()`](https://stackoverflow.com/questions/3053833/using-r-to-download-zipped-data-file-extract-and-import-data)
 
 
-
 ## Exercise: online file import
 
-If we wanted the same data for the 2018 US Open, how do you think we could do that?
+If we want the same data for the 2018 US Open, how do you think we could do that?
 
-1. Test a possible URL for the 2018 US Open
+Step 1. Find out the URL.
 
-2. Import the file
+hint: check out the previous 2019 AUS open URL:
+
+"http://www.tennis-data.co.uk/2019/ausopen.csv"
+
+
+Step 2. Apply the `read.csv()` function.
 
 ## Solution: online file import
 
@@ -144,9 +171,11 @@ tennis_us <- read.csv(url)
 ```
 
 What about the format?
-```{r echo=TRUE, message=FALSE, warning=FALSE}
-print(dim(tennis_us))
-tennis_us[1,1:6]
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+require("kableExtra")
+kable(tennis_us, "html",align=c(rep('c',times=ncol(tennis_aus)))) %>%
+    kable_styling(font_size = 14) %>%
+    scroll_box(width = "1000px", height = "200px")
 ```
 
 
@@ -154,126 +183,172 @@ tennis_us[1,1:6]
 
 Unfortunately, most of the data are not available directly. 
 
-In this case, you can still capture the data but you need to know whether it is `static` or `dynamic` data. Web developer tools open the door to "view source". 
+In this case, you can still capture the data but you need to know whether it is `static` or `dynamic` via the source code. Web developer tools open the door to "view source". 
 
-```{r, out.width = "400px"}
-knitr::include_graphics("figures/web_dev_mac.png")
-knitr::include_graphics("figures/web_dev_win.png")
-```
+![](figures/web_dev.png)
+
 
 ## Exercise: static or dynamic? 
 
 - [Apple](https://www.apple.com/iphone-11/specs/)
 
-- [Quora](https://www.quora.com/)
+- [Reddit](https://www.reddit.com/)
 
 - [Tennis Elo rankings](http://tennisabstract.com/reports/atp_elo_ratings.html)
 
-- [Sports reference](https://www.sports-reference.com/cbb/players/chris-clemons-2.html)
+- [NCAA (UConn)](https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/)
 
+## Solution: static or dynamic? 
 
-## Scrap static data
+<div class="columns-2">
+  ![](figures/spongebob_still.png){height=300px}
+  
+  Static:  Apple, Tennis Elo rankings
+  
+  
+  ![](figures/spongebob_gif.gif){height=300px}
+  
+  Dynamic:  Reddit, NCAA (UConn)
 
-- HTML elements are written with a start tag, an end tag, and with the content in between: `<tagname>content<tagname>`. The tags which typically contain the textual content we wish to scrape, and the tags we will leverage in the next two sections, include:
+## Scrape static data
+- Directly read in the source code line by line. `readLines()` can achieve that.
 
-    + `<h1>`, `<h2>`: headings; `<p>`: Paragraph; 
-      `<div>`: Division or section; `<table>`: Table
-
-
-- `readLines()`. Restricted usage, need further cleaning.
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 tennis_elo <- readLines("http://tennisabstract.com/reports/atp_elo_ratings.html")
-tennis_elo[1:3]
+head(tennis_elo)
 ```
 
-## Scrap static data
+- Restricted usage, need further cleaning.
 
-- With scraping packages like `rvest` or `RCurl`. 
+## Scrape static data
+
+- HTML elements are written with a start tag, an end tag, and with the content in between: `<tagname>content<tagname>`. The tags typically contain the textual content we wish to scrape, and we will be working with the following:
+
+<div class="columns-2">
+  <center>![](figures/pick_apple.jpg){width=250px}</center>
+
+  - `<h1>`, `<h2>`: headings;
+  - `<p>`: paragraph;
+  - `<div>`: division or section;
+  - `<table>`: table. `<tr>`, `<td>`, `<th>`
+</div>
+    
+    
+-  Inspect elements (just right click)
+
+
+## Scrape static data
+
+- More advanced methods: use scraping packages like `rvest` or `RCurl`. 
 
 - `rvest`: Instead of going line by line, we search for specific tagnames(nodes). 
     
-    + Developed by RStudio team, make use of the pipe operator [%>%](http://uc-r.github.io/pipe) developed through the `magrittr` package.
+    - Developed by RStudio team, make use of the pipe operator [%>%](http://uc-r.github.io/pipe) developed through the `magrittr` package.
     
-    + data %>% filter(variable == numeric_value)
+    - data %>% filter(variable == numeric_value)
+    
+<img style="float: right;" src="figures/harvest.jpg" width="500px">
+
+## Example: Scrape static data - NBA box score
+Example: NBA box scores in [June 13th](https://www.basketball-reference.com/boxscores/?month=6&day=13&year=2019).
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 require('rvest')
-url <- 'https://www.sports-reference.com/cbb/players/chris-clemons-2.html'
-webpage <- read_html(url)
-```    
-
-## Scrap static data
-```{r echo=TRUE, message=FALSE, warning=FALSE}
-data <- webpage %>%
-        html_nodes(css = 'table') %>%
-        html_table()
-cat("Extracted", length(data), "tables, with", nrow(data[[1]]), "rows and", ncol(data[[1]]), "columns \n")
-head(data[[1]][1,1:8])
-```    
-
-- Why do we only the first table? 
-
-## Exercise: static data
-- Try to scrap the box scores for NBA games in [June 13th](https://www.basketball-reference.com/boxscores/?month=6&day=13&year=2019). 
-    
-    + how to verify the date?
-
-    + how many tables do you think there are?
-    
-    + what if we are only interested in a specific one? (eg. East division)
-    
-    + how to calculate the average win/loss percentenge in Atlantic division? 
-    
-## Solution: static data
-```{r echo=TRUE, message=FALSE, warning=FALSE}
-require('rvest')
-webpage <- read_html('https://www.basketball-reference.com/boxscores/?month=6&day=13&year=2019')
-date <- webpage %>% html_nodes(css = 'h1') %>% html_text()
-date[[1]]
+url_nba <- "https://www.basketball-reference.com/boxscores/?month=6&day=13&year=2019"
+webpage <- read_html(url_nba)
+webpage %>% html_nodes(css = 'h1') %>% html_text()
 ```
+
+How many tables do you think there are in the page?
+
+How would R store them? 
+
+     - vector, data frame, list, lists of lists ...
+
+
+## Example: Scrape static data - NBA box score
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 boxscore_0613 <- webpage %>%
                 html_nodes(css = 'table') %>%
                 html_table()
-length(boxscore_0613)
+typeof(boxscore_0613)
 ```    
- 
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+kable(boxscore_0613, "html") %>%
+    kable_styling(font_size = 13) %>%
+    scroll_box(width = "1000px", height = "200px")
+```
+
+
+## Exercise: static data
+- Try to scrape only the division standings table for the Eastern conference.
+
+    + you can subset previous list, find the index of this table
+
+    + another way is to directly scrape only this target table
+
+
+- Can you further calculate the average win/loss percentenge in Atlantic division? 
+
+    
 ## Solution: static data
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
+webpage <- read_html(url_nba)
 boxscore_east <- webpage %>%
                 html_nodes(xpath = '//*[@id="divs_standings_E"]') %>%
                 html_table(header = T)
-boxscore_east[[1]][1:3,1:3]
 ```       
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+kable(boxscore_east[[1]], "html") %>%
+    kable_styling(font_size = 12) %>%
+    scroll_box(width = "1000px", height = "170px")
+```
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 boxscore_east <- boxscore_east[[1]]
 mean(as.numeric(boxscore_east$`W/L%`[2:6]))
 ``` 
 
-## Exercise: loop through static data 
-- How to extract all Toronto Raptor's score in every month's first day in 2018?
+## Exercise: loop through static data
 
-    - start with [January 1st](https://www.basketball-reference.com/boxscores/?month=1&day=1&year=2018)
-    
-    - pattern in the url
+- How to extract all Toronto Raptor's score in every month's first day in season 2018/2019?
+
+    - the regular season began on October 16, 2018 and ended on April 10, 2019
+
+    - start with [November 1st 2018](https://www.basketball-reference.com/boxscores/?month=11&day=1&year=2018)
+
+    - find pattern in the url: ...boxscores/?month=11&day=1&year=2018
     
     - implement R loop
 
-- Can you extend this to the whole year 2018? 
+- Can you extend this to the whole year of 2018?
 
 
-## Solution: loop through static data 
+## Solution: loop through static data
 
-```{r eval=FALSE, echo=TRUE, message=FALSE, warning=FALSE}
-require('rvest')
+```{r echo=TRUE, message=FALSE, warning=FALSE}
 url_common_start <- "https://www.basketball-reference.com/boxscores/?month="
-url_common_end <- "&day=1&year=2018"
+url_seq  <- paste0(c(11,12,1:4),"&day=1&year=",c(rep(2018,2),rep(2019,4)))
+```
 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+url_seq_print <- data.frame(paste0(url_common_start,url_seq))
+colnames(url_seq_print) = c("URL")
+kable(url_seq_print, "html") %>%
+    kable_styling(font_size = 14,position = "left") %>%
+    scroll_box(width = "1000px", height = "200px")
+```
+
+## Solution: loop through static data
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
 score_raptor_2018 <- NULL
-for (month in c(1:6,11,12)){
-  url <- paste0(url_common_start,month,url_common_end)
+for (i in 1:length(url_seq)){
+  url <- paste0(url_common_start,url_seq[i])
   webpage <- read_html(url)
   boxscore <- webpage %>%
     html_nodes(xpath = '//*[@id="divs_standings_E"]') %>%
@@ -282,17 +357,20 @@ for (month in c(1:6,11,12)){
   score_raptor_month <- boxscore[boxscore$`Eastern Conference` == "Toronto Raptors*",]
   score_raptor_2018 <- rbind(score_raptor_2018,score_raptor_month,make.row.names = FALSE)
 }
-score_raptor_2018["Month"] <- c(1:6,11,12)
-head(score_raptor_2018)
-``` 
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+kable(score_raptor_2018, "html",align="cccccc") %>%
+    kable_styling(font_size = 13,position = "left") %>%
+    scroll_box(width = "1000px", height = "170px")
+```
 
 
-
-## Scrap dynamic data
+## Scrape dynamic data
 
 - Because dynamic data is created on-the-fly (in response to user interactions) we have to browse to get access to it. 
 
-- How do we "browse"? open Chrome, read content, find the keywords, extract information.
+- "browse": open Chrome, read content, find the keywords, click hyperlink, extract information.
 
 - Can this process be automated?
 
@@ -303,7 +381,7 @@ head(score_raptor_2018)
 - With packages `RSelenium`, an interface with software [Selenium](https://www.seleniumhq.org/), makes it easy to connect to a Selenium Server.
 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
-install.packages("RSelenium",repos = "http://cran.us.r-project.org")
+install.packages("RSelenium", repos = "http://cran.us.r-project.org")
 require(RSelenium)
 ```
 
@@ -319,14 +397,14 @@ Possible errors:
 ![session not created](./figures/selenium_err1.png)
 ![couldn't open browser](./figures/selenium_err2.png)
 
-- check the version of your chrome driver (chromehelp -> about google chrome -> version), check the supported selenium driver, find the closet configuration in the package, change default value.
+- check the version of your chrome driver (chromehelp -> about google chrome -> version), check the supported selenium driver, find the closest configuration in the package, change default value.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 binman::list_versions("chromedriver")
 ```
 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
-rD <- rsDriver(port = 4444L, browser = "chrome",chromever = "77.0.3865.40")
+rD <- rsDriver(port = 4444L, browser = "chrome", chromever = "77.0.3865.40")
 ```
 
 ## Set up `RSelenium`
@@ -336,19 +414,21 @@ Possible error:
 
 - Try a different number as port, any positive number should work.
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
-rD <- rsDriver(port = 5678L, browser = "chrome",chromever = "77.0.3865.40")
+rD <- rsDriver(port = 5679L, browser = "chrome", chromever = "77.0.3865.40")
+remDr <- rD[["client"]]
+remDr$navigate("http://www.google.com")
 ```
 
 After this command, you should see a pop-up blank tab, let's move on!
 
-## Scrap dynamic data
+## Scrape dynamic data
 - Lots of functions are implemented and [documented](https://cran.r-project.org/web/packages/RSelenium/RSelenium.pdf), basic steps including:
 
-    - Set the Web driver, select browser and port (hopefully done!)
+    - Set the web driver, select browser and port (hopefully done!)
     
     - Find the elements with the data
     
-    - Extract the content
+    - Extract the contents
     
     - Parse the contents
     
@@ -357,7 +437,7 @@ After this command, you should see a pop-up blank tab, let's move on!
 Consider the following match summary: [2017 Australian Open Final](http://www.flashscore.com/match/Cj6I5iL9/#match-statistics;0)
 
 <center>
-![](figures/aus-open-final.png){width=70%}
+![](figures/aus-open-final.png){width=800px}
 </center>
 
 
@@ -366,7 +446,7 @@ Consider the following match summary: [2017 Australian Open Final](http://www.fl
 If we inspect the page, we find that these stats are dynamic data. We also find that the main table of content has the id `detail`.
 
 <center>
-![](figures/aus-open-inspect.png){width=95%}
+![](figures/aus-open-inspect.png){width=950px}
 </center>
 
 
@@ -374,17 +454,21 @@ If we inspect the page, we find that these stats are dynamic data. We also find 
 Following previous steps, after setting up the server, we extract the table of stats using the CSS `id` node.
 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+## navigate to the page first
+url <- "http://www.flashscore.com/match/Cj6I5iL9/#match-statistics;0"
+remDr$navigate(url)
 # Get id element
 webElem <- remDr$findElements(using = 'id', "detail")
 #  Use getElementText to extract the text from this element
 unlist(lapply(webElem, function(x){x$getElementText()}))[[1]]
-remDr$close() # Close driver when finished
+remDr$close()
 ```
+![](figures/ausopen_content.png)
 
 ## Exercise: dynamic data
 Take a look at another match [summary](https://www.flashscore.com/match/fNecEwW2/#match-statistics;0), can you extract the statistics in set 1, 2 and 3 seperately and compare to the full match result? 
 
-- Set up driver for this url;
+- Set up driver for this URL;
 
 - Find the key word you want to extract;
 
@@ -397,8 +481,8 @@ Take a look at another match [summary](https://www.flashscore.com/match/fNecEwW2
 ## Solution: dynamic data
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
 # set up server
-remDr <- rsDriver(port = 5558L, browser = "chrome",version = "4.0.0-alpha-2",
-               chromever = "77.0.3865.40")
+remDr <- rsDriver(port = 5558L, browser = "chrome", version = "4.0.0-alpha-2",
+                  chromever = "77.0.3865.40")
 remDr <- remDr[["client"]]
 # start loop
 url <- "https://www.flashscore.com/match/fNecEwW2/#match-statistics;"
@@ -408,12 +492,12 @@ for (i in 0:3){
   # navigate page
   remDr$navigate(paste0(url,i)) 
   # find elements
-  webElem <- remDr$findElements(using = 'id', "detail")
+  webElem <- remDr$findElements(using = 'id', 'detail')
   #  Use getElementText to extract the text from this element
   result[i+1] <- unlist(lapply(webElem, function(x){x$getElementText()}))[[1]]
 }
-# close server
-remDr$close() # Close driver when finished
+# close driver
+remDr$close() 
 ```
 
 ## Solution: dynamic data
@@ -422,18 +506,18 @@ result_set <- NULL
 for (i in 1:4){
   res <- result[i]
   # keep only useful information
-  res <- gsub(".*Set 3\n(.+)  close window.*", "\\1", res)
+  res <- gsub(".*Set 3\n(.+)", "\\1", res)
   # split string into vector
-  result_set <- cbind(result_set,unlist(strsplit(res, split = '\n')))
+  result_set <- cbind(result_set, unlist(strsplit(res, split = '\n')))
 }
 colnames(result_set) <- c("match","set1", "set2","set3")
 head(result_set)
 ```
-![](figures/set_result.png)
+![](figures/set_result.png){width=800px}
 
 ## What else ...
 
-There are some other functions in the `RSelenium` package, including but not limited to:
+There are some other functions in the `RSelenium` package, including:
 
 - `findElement()` with CSS selector or Xpath
 
@@ -449,11 +533,11 @@ There are some other functions in the `RSelenium` package, including but not lim
 ## Case study: College basketball - UConn
 If we want to know how is UConn's performance at NCAA basketball 2018/2019, which kind of data may be helpful? 
 
-- match record, Win/loss
+- match record, win/loss
 
 - score record, home/away
 
-- component information, head to head statistics
+- Opponent information, head to head statistics
 
 There are tons of websites/resources out there, I'll use [FlashScore](https://www.flashscore.com/) as an example today. 
 
@@ -462,7 +546,7 @@ There are tons of websites/resources out there, I'll use [FlashScore](https://ww
 Let's take a look at UConn's [homepage](https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/):
 
 <center>
-![](figures/uconn_flashscore.png){width=75%}
+![](figures/uconn_flashscore.png){width:75%}
 </center>
 
 ## Case study: College basketball - UConn
@@ -471,10 +555,11 @@ url <- "https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/"
 remDr <- rsDriver(port = 5556L, browser = "chrome",version = "4.0.0-alpha-2",
                chromever = "77.0.3865.40")
 remDr <- remDr[["client"]]
+remDr$navigate(url) 
 ```
 
 <center>
-![](figures/uconn-livetable.png){width=80%}
+![](figures/uconn-livetable.png){width=900px}
 </center>
 
 ## Case study: College basketball - UConn
@@ -484,20 +569,37 @@ unlist(lapply(webElem, function(x){x$getElementText()}))
 ```
 
 <center>
-![](figures/uconn_beforeclick.png){width=60%}
+![](figures/uconn_beforeclick.png){width=800px}
 </center>
 
 <center>
 ![](figures/uconn-showmore.png)
 </center>
 
-- It would be great to collect more information, i.e., click the show more matches. 
+- It would be great if we can collect more information in one script.
+
+- How to click the "show more matches"?
 
 ## Case study: College basketball - UConn
 - To "click", we inspect the element (right click -> inspect -> right click highlight -> copy -> copy selector), then apply `findElements()`. 
 
-- Just like when we click with mouse, there is no guarantee how many more rows we get to see. A while loop would be useful now. 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+click_ind <- remDr$findElement(using = 'css selector', 
+                              "#live-table > div > div > div > a")
+click_ind$clickElement()
+```
+
+<center>
+![](figures/uconn-showmore.png)
+![](figures/uconn-showmoremore.png)
+</center>
+
+- Just like when we click using the mouse, there is no guarantee how many more rows we get to see. Loop condition became *do...until...*.
+
+## Case study: College basketball - UConn
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+url <- "https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/"
 remDr$navigate(url)
 repeat{
   x <- try(click_ind <- remDr$findElement(using = 'css selector', 
@@ -506,30 +608,32 @@ repeat{
   if (inherits(x, "try-error")) break
   click_ind$clickElement()
 }
-webElem <- remDr$findElements(using = 'id', "live-table")
-uconn_score_all <- unlist(lapply(webElem, function(x){x$getElementText()}))
 ```
+
 
 ## Case study: College basketball - UConn
-- Now with all the available data, time to scrap and clean! 
+- Now with all the available data, time to scrape and clean! 
 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+webElem <- remDr$findElements(using = 'id', "live-table")
+uconn_score_all <- unlist(lapply(webElem, function(x){x$getElementText()}))
 uconn_score <- unlist(strsplit(uconn_score_all, split = '\n'))[-c(1:3)]
-uconn_score[1:50]
 ```
+
+Below is the first 50 elements of organized object uconn_score.
 <center>
 ![](figures/head_uconn_score.png)
 </center>
 
 
 ## Case study: College basketball - UConn
-What about a match predictions? 
+What about a single match prediction? 
 
 - Just for a minute, pretend we are at March 13th, 2019. There will be a game between South Florida and UConn tomorrow. 
 
-- To predict which one would win, we may need...
+- To predict which team would win, we may need...
 
-    + Head to head statistics between the two teams
+    + head to head statistics between the two teams
     
     + SFU winning rate, UConn winning rate etc.
 
@@ -537,11 +641,11 @@ What about a match predictions?
 ## Case study: College basketball - UConn
 For head to head comparison, inspect the element first again:
 <center>
-![](figures/uconn_sfu_h2h.png){width=60%}
+![](figures/uconn_sfu_h2h.png){width=900px}
 </center>
 
 ## Case study: College basketball - UConn
-
+Similar to the example, we first load all the data by "clicking" show more results.
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
 url <- "https://www.flashscore.com/match/IRo6KWr7/#h2h;overall"
 remDr$navigate(url)
@@ -555,18 +659,27 @@ webElem$clickElement()
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
 webElem <- remDr$findElement(using = 'css selector', 
                              "#tab-h2h-overall > div:nth-child(3) > table")
+## extract head to head table 
 h2h <- unlist(webElem$getElementText())
+## organize format
 h2h <- unlist(strsplit(h2h, split = '\n'))[-c(1,17,20)]
 h2h <- gsub("South Florida", "SF", h2h)
+```
+
+![](figures/uconn_sfu_h2h_head.png)
+
+## Case study: College basketball - UConn
+```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
+## count the number of wins for both teams
 win_team <- NULL
 for (i in 1:length(h2h)){
   team <- h2h[[i]][c(3,4)]
   score <- as.numeric(h2h[[i]][c(5,7)])
-  win_team <- c(win_team,team[which.max(score)])
+  win_team <- c(win_team, team[which.max(score)])
 }
 ```
 
-![](figures/uconn_sfu_h2h_overall.png)
+![](figures/uconn_sfu_h2h_overall.png){width=400px}
 
 ## Case study: College basketball - UConn
 - Looks like UConn is gonna win! 
@@ -574,6 +687,36 @@ for (i in 1:length(h2h)){
 <center>
 ![](figures/uconn_southf.png)
 </center>
+
+- It's cool, but be careful, may need more investigation! 
+
+## Attention!
+
+<center>
+![](figures/great_power.gif){width=700px}
+</center>
+
+- There are legal and ethical aspects to data scraping, check out this [article](https://www.datahen.com/legal-ethical-aspects-data-scraping/).
+
+- Example: delayed quotes on [Cboe](http://www.cboe.com/delayedquote/quote-table).
+
+
+
+## Summary
+- Import directly: `read_csv`, `download.file`
+
+- Static: `readLines`, `rvest`
+
+- Dynamic: `RSelenium`, `findElements`, `clickElements`
+
+- Useful R functions: loops, `strsplit`, `gsub`
+
+<div class="columns-2">
+  ![](https://media.giphy.com/media/2m1WnCqNuyEJnigDAP/giphy.gif)
+
+  - **Programming only provides the tool, when to use it or what to use it on, still relies on analytical thinking.**
+</div>
+
 
 ## Resources
 
@@ -583,7 +726,7 @@ for (i in 1:length(h2h)){
 
 - [RSelenium](https://ropensci.org/tutorials/rselenium_tutorial.html)
 
-- [R task: web technology](https://cran.r-project.org/web/views/WebTechnologies.html)
+- [R task view: web technology](https://cran.r-project.org/web/views/WebTechnologies.html)
 
 
 
