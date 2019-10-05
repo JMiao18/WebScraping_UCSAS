@@ -9,7 +9,6 @@
 
 
 
-  <meta name="date" content="2019-10-05" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3126,13 +3125,14 @@ slide:not(.current) .plotly.html-widget{
       <h1 data-config-title><!-- populated from slide_config.json --></h1>
       <h2 data-config-subtitle><!-- populated from slide_config.json --></h2>
       <p data-config-presenter><!-- populated from slide_config.json --></p>
-            <p style="margin-top: 6px; margin-left: -2px;">October 5, 2019</p>
+            <p style="margin-top: 6px; margin-left: -2px;">October 5th, 2019</p>
           </hgroup>
   </slide>
 
 <slide class=""><hgroup><h2>Outline</h2></hgroup><article  id="outline">
 
 <ul>
+<li><p>Material: &ldquo;github.com/wanwanx/WebScraping_UCSAS&rdquo;</p></li>
 <li><p>Why do we need to &ldquo;scrape&rdquo;?</p></li>
 <li><p>Types of web scraping</p></li>
 <li>Using R
@@ -3179,7 +3179,7 @@ slide:not(.current) .plotly.html-widget{
 <ul>
 <li><em>Powerful but expensive, some pages may not be accessible.</em></li>
 </ul></li>
-<li><p>DOM (Document Object Model) parsing:</p>
+<li><p><a href='https://en.wikipedia.org/wiki/Document_Object_Model' title=''>DOM (Document Object Model)</a> parsing:</p>
 
 <ul>
 <li><em>Not intuitive, require programming.</em></li>
@@ -3237,7 +3237,7 @@ help(package = &quot;rvest&quot;)       </pre>
 
 <ul>
 <li><p>Files that can be read with <code>read.csv</code> or related functions can be directly imported from a URL.</p></li>
-<li><p>Example: we extract the most recent <a href='http://www.tennis-data.co.uk/ausopen.php' title=''>Australian Open Tennis Championships (AUS Open) atch results</a>:</p></li>
+<li><p>Example: we extract the most recent Australian Open Tennis Championships match <a href='http://www.tennis-data.co.uk/ausopen.php' title=''>(AUS Open)</a>:</p></li>
 </ul>
 
 <pre class = 'prettyprint lang-r'>url &lt;- &quot;http://www.tennis-data.co.uk/2019/ausopen.csv&quot;
@@ -62811,7 +62811,7 @@ webpage %&gt;% html_nodes(css = &#39;h1&#39;) %&gt;% html_text()</pre>
 
 <p>How would R store them?</p>
 
-<pre > - vector, data frame, list, lists of lists ...</pre>
+<pre > - vectors, matrices, arrays, data frames, lists ...</pre>
 
 </article></slide><slide class=""><hgroup><h2>Example: Scrape static data - NBA box score</h2></hgroup><article  id="example-scrape-static-data---nba-box-score-1">
 
@@ -67330,12 +67330,14 @@ mean(as.numeric(boxscore_east$`W/L%`[2:6]))</pre>
 
 </article></slide><slide class=""><hgroup><h2>Solution: loop through static data</h2></hgroup><article  id="solution-loop-through-static-data">
 
+<p>Step 1: construct the sequence of URLs.</p>
+
 <pre class = 'prettyprint lang-r'>url_common_start &lt;- &quot;https://www.basketball-reference.com/boxscores/?month=&quot;
 url_seq  &lt;- paste0(c(11,12,1:4),&quot;&amp;day=1&amp;year=&quot;,c(rep(2018,2),rep(2019,4)))</pre>
 
 <div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:200px; overflow-x: scroll; width:1000px; ">
 
-<table class="table" style="font-size: 14px; ">
+<table class="table" style="font-size: 15px; ">
 
 <thead>
 
@@ -67421,6 +67423,8 @@ URL
 
 </article></slide><slide class=""><hgroup><h2>Solution: loop through static data</h2></hgroup><article  id="solution-loop-through-static-data-1">
 
+<p>Step 2: implement the loop for URL sequence</p>
+
 <pre class = 'prettyprint lang-r'>score_raptor_2018 &lt;- NULL
 for (i in 1:length(url_seq)){
   url &lt;- paste0(url_common_start,url_seq[i])
@@ -67433,9 +67437,9 @@ for (i in 1:length(url_seq)){
   score_raptor_2018 &lt;- rbind(score_raptor_2018,score_raptor_month,make.row.names = FALSE)
 }</pre>
 
-<div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:170px; overflow-x: scroll; width:1000px; ">
+<div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:150px; overflow-x: scroll; width:1000px; ">
 
-<table class="table" style="font-size: 13px; ">
+<table class="table" style="font-size: 15px; ">
 
 <thead>
 

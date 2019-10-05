@@ -2,7 +2,7 @@
 title: "Web Scraping for Sports Data"
 subtitle: 'UCSAS 2019'
 author:  Wanwan Xu
-date: "October 5, 2019"
+date: "October 5th, 2019"
 output: 
   ioslides_presentation:
       widescreen: true
@@ -18,6 +18,7 @@ require("kableExtra")
 ```
 
 ## Outline
+- Material: "github.com/wanwanx/WebScraping_UCSAS"
 
 - Why do we need to "scrape"?
 
@@ -61,7 +62,7 @@ Have you experienced ...
 
     - *Powerful but expensive, some pages may not be accessible.*  
         
-- DOM (Document Object Model) parsing:
+- [DOM (Document Object Model)](https://en.wikipedia.org/wiki/Document_Object_Model) parsing:
       
     - *Not intuitive, require programming.*
 
@@ -116,7 +117,7 @@ What are the possible scenarios we will be facing?
 ## Importing files stored online
 - Files that can be read with `read.csv` or related functions can be directly imported from a URL.
 
-- Example: we extract the most recent [Australian Open Tennis Championships (AUS Open) atch results](http://www.tennis-data.co.uk/ausopen.php):
+- Example: we extract the most recent Australian Open Tennis Championships match [(AUS Open)](http://www.tennis-data.co.uk/ausopen.php):
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 url <- "http://www.tennis-data.co.uk/2019/ausopen.csv"
 tennis_aus <- read.csv(url)
@@ -233,7 +234,7 @@ head(tennis_elo)
   - `<table>`: table. `<tr>`, `<td>`, `<th>`
 </div>
     
-    
+
 -  Inspect elements (just right click)
 
 
@@ -263,7 +264,7 @@ How many tables do you think there are in the page?
 
 How would R store them? 
 
-     - vector, data frame, list, lists of lists ...
+     - vectors, matrices, arrays, data frames, lists ...
 
 
 ## Example: Scrape static data - NBA box score
@@ -330,20 +331,25 @@ mean(as.numeric(boxscore_east$`W/L%`[2:6]))
 
 ## Solution: loop through static data
 
+Step 1: construct the sequence of URLs.
+
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 url_common_start <- "https://www.basketball-reference.com/boxscores/?month="
 url_seq  <- paste0(c(11,12,1:4),"&day=1&year=",c(rep(2018,2),rep(2019,4)))
 ```
 
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 url_seq_print <- data.frame(paste0(url_common_start,url_seq))
 colnames(url_seq_print) = c("URL")
 kable(url_seq_print, "html") %>%
-    kable_styling(font_size = 14,position = "left") %>%
+    kable_styling(font_size = 15,position = "left") %>%
     scroll_box(width = "1000px", height = "200px")
 ```
 
 ## Solution: loop through static data
+
+Step 2: implement the loop for URL sequence
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 score_raptor_2018 <- NULL
@@ -361,8 +367,8 @@ for (i in 1:length(url_seq)){
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 kable(score_raptor_2018, "html",align="cccccc") %>%
-    kable_styling(font_size = 13,position = "left") %>%
-    scroll_box(width = "1000px", height = "170px")
+    kable_styling(font_size = 15,position = "left") %>%
+    scroll_box(width = "1000px", height = "150px")
 ```
 
 
@@ -505,7 +511,7 @@ remDr$close()
 result_set <- NULL
 for (i in 1:4){
   res <- result[i]
-  # keep only useful information
+  # grab and substitute. Remove irrelavant text before "set3"
   res <- gsub(".*Set 3\n(.+)", "\\1", res)
   # split string into vector
   result_set <- cbind(result_set, unlist(strsplit(res, split = '\n')))

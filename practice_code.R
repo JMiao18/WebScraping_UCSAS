@@ -37,8 +37,6 @@ url <- "http://www.tennis-data.co.uk/2018/usopen.csv"
 tennis_us <- read.csv(url)
 
 
-
-
 ########################## static data ##############################
 
 ## readLines
@@ -70,21 +68,33 @@ mean(as.numeric(boxscore_east$`W/L%`[2:6]))
 ## exercise: loop through static data 
 url_common_start <- "https://www.basketball-reference.com/boxscores/?month="
 url_seq  <- paste0(c(11,12,1:4),"&day=1&year=",c(rep(2018,2),rep(2019,4)))
+
+# paste0 function
+print(paste0(1,"A"))
+print(paste0(1:3,"A"))
+print(paste0(1,rep("A",3)))
+
+
 score_raptor_2018 <- NULL
 for (i in 1:length(url_seq)){
   url <- paste0(url_common_start,url_seq[i])
   webpage <- read_html(url)
+  
+  ## using xpath
   boxscore <- webpage %>%
     html_nodes(xpath = '//*[@id="divs_standings_E"]') %>%
     html_table(header=T)
+  
+  # ## equaivalently using css
+  # boxscore <- webpage %>%
+  #   html_nodes(css = '#divs_standings_E') %>%
+  #   html_table(header=T)
+
   boxscore <- boxscore[[1]]
   score_raptor_month <- boxscore[boxscore$`Eastern Conference` == "Toronto Raptors*",]
   score_raptor_2018 <- rbind(score_raptor_2018,score_raptor_month,make.row.names = FALSE)
 }
 score_raptor_2018
-
-
-
 
 
 ########################## dynamic data ##############################
@@ -110,7 +120,7 @@ unlist(lapply(webElem, function(x){x$getElementText()}))[[1]]
 remDr$close() 
 
 
-## exercise: 
+## exercise: dynamic data
 # set up server
 remDr <- rsDriver(port = 5747L, browser = "chrome", version = "4.0.0-alpha-2",
                   chromever = "77.0.3865.40")
@@ -130,6 +140,7 @@ for (i in 0:3){
 }
 # close driver
 remDr$close() 
+
 # organize results
 result_set <- NULL
 for (i in 1:4){
@@ -140,7 +151,10 @@ for (i in 1:4){
   result_set <- cbind(result_set, unlist(strsplit(res, split = '\n')))
 }
 colnames(result_set) <- c("match","set1", "set2","set3")
-head(result_set)
+View(result_set)
+
+# merge of unequal length vectors have multiple solution
+# https://stackoverflow.com/questions/3699405/how-to-cbind-or-rbind-different-lengths-vectors-without-repeating-the-elements-o
 
 
 ########################## case study ##############################
@@ -170,7 +184,13 @@ repeat{
   x <- try(click_ind <- remDr$findElement(using = 'css selector', 
                                           "#live-table > div > div > div > a"),
            silent=TRUE)
-  if (inherits(x, "try-error")){break}
+  # if (inherits(x, "try-error")){break}
+  if (inherits(x, "try-error")){
+    print("done!")
+    break
+  }else{
+    print("still clicking")
+  }
   try(click_ind$clickElement(),silent=TRUE)
 }
 
@@ -186,15 +206,17 @@ remDr$close()
 
 ## navigate to head to head page
 url <- "https://www.flashscore.com/match/IRo6KWr7/#h2h;overall"
-rD <- rsDriver(port = 2648L, browser = "chrome",version = "4.0.0-alpha-2",
+rD <- rsDriver(port = 2649L, browser = "chrome",version = "4.0.0-alpha-2",
                chromever = "77.0.3865.40")
 remDr <- rD[["client"]]
 remDr$navigate(url)
 
-## click to load all the data, extract table elements
+## click to load all the data, 
 webElem <- remDr$findElement(using = 'css selector', 
                              "#tab-h2h-overall > div:nth-child(3) > table > tbody > tr.hid > td > a")
 webElem$clickElement()
+
+## extract table elements
 webElem <- remDr$findElement(using = 'css selector', 
                              "#tab-h2h-overall > div:nth-child(3) > table")
 
